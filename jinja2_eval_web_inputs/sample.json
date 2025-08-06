@@ -1,0 +1,13 @@
+{
+  "example": "This is a sample JSON file",
+  "purpose": "Demonstrate input files functionality",
+  "data": {
+    "servers": ["server1.example.com", "server2.example.com"],
+    "environments": ["development", "staging", "production"],
+    "config": {
+      "timeout": 30,
+      "retries": 3,
+      "debug": false
+    }
+  }
+}

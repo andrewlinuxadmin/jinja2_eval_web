@@ -30,7 +30,7 @@ config = configparser.ConfigParser()
 if not os.path.exists(CONF_PATH):
   config['history'] = {'max_entries': '1000'}
   config['input_files'] = {
-    'directory': '',
+    'directory': 'jinja2_eval_web_inputs',
     'refresh_interval': '1'
   }
   with open(CONF_PATH, 'w', encoding='utf-8') as conf_file:
