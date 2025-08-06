@@ -125,21 +125,21 @@ class JinjaHandler(BaseHTTPRequestHandler):
         if not input_dir:
           self.wfile.write(json.dumps([]).encode('utf-8'))
           return
-        
+
         # Convert relative path to absolute if needed
         if not os.path.isabs(input_dir):
           input_dir = os.path.join(CURRENT_DIR, input_dir)
-        
+
         if not os.path.exists(input_dir) or not os.path.isdir(input_dir):
           self.wfile.write(json.dumps([]).encode('utf-8'))
           return
-        
+
         files = []
         for filename in os.listdir(input_dir):
           filepath = os.path.join(input_dir, filename)
           if os.path.isfile(filepath):
             files.append(filename)
-        
+
         files.sort()
         self.wfile.write(json.dumps(files).encode('utf-8'))
       except Exception:
@@ -151,26 +151,26 @@ class JinjaHandler(BaseHTTPRequestHandler):
       if not filename:
         self.send_error(400, 'Missing filename parameter')
         return
-      
+
       try:
         input_dir = config.get('input_files', 'directory', fallback='')
         if not input_dir:
           self.send_error(404, 'Input directory not configured')
           return
-        
+
         # Convert relative path to absolute if needed
         if not os.path.isabs(input_dir):
           input_dir = os.path.join(CURRENT_DIR, input_dir)
-        
+
         # Security check - prevent path traversal attacks
         # Remove any path separators and ensure filename is safe
         safe_filename = os.path.basename(filename)
         if safe_filename != filename or '..' in filename or '/' in filename or '\\' in filename:
           self.send_error(403, 'Access denied - invalid filename')
           return
-        
+
         filepath = os.path.join(input_dir, safe_filename)
-        
+
         # Additional security check - ensure resolved path is within directory
         try:
           real_input_dir = os.path.realpath(input_dir)
@@ -181,14 +181,14 @@ class JinjaHandler(BaseHTTPRequestHandler):
         except Exception:
           self.send_error(403, 'Access denied - path resolution error')
           return
-        
+
         if not os.path.exists(filepath) or not os.path.isfile(filepath):
           self.send_error(404, 'File not found')
           return
-        
+
         with open(filepath, 'r', encoding='utf-8') as f:
           content = f.read()
-        
+
         self._send_headers(200, 'text/plain')
         self.wfile.write(content.encode('utf-8'))
         self.wfile.flush()

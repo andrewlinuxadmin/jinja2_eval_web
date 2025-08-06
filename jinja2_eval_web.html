@@ -181,7 +181,7 @@
     // Function to detect content format
     function detectFormat(content) {
       if (!content || !content.trim()) return 'application/json';
-      
+
       // Try to parse as JSON first
       try {
         JSON.parse(content);
@@ -199,7 +199,7 @@
     // Function to detect result format
     function detectResultFormat(content) {
       if (!content || !content.trim()) return 'text/plain';
-      
+
       try {
         JSON.parse(content);
         return 'application/json';
@@ -242,7 +242,7 @@
       $.getJSON('/history', data => {
         const sel = $('#history-select').empty().append('<option value="">-- Select past entry --</option>');
         historyMap = data;
-        data.forEach((e,i) => sel.append(`<option value="${i}">${e.datetime} | ${e.expr.slice(0,50).replace(/\n/g,' ')} | ${e.input.slice(0,50).replace(/\n/g,' ')}</option>`));
+        data.forEach((e,i) => sel.append(`<option value="${i}">${e.datetime} |-| ${e.expr.slice(0,100).replace(/\n/g,' ')} |-| ${e.input.slice(0,100).replace(/\n/g,' ')}</option>`));
       });
     }
 
@@ -370,14 +370,14 @@
           directory:$('#input-files-directory').val(),
           refresh_interval:$('#input-files-refresh').val()
         };
-        
+
         $.post('/settings', userPayload).done(() => {
           currentTheme = userPayload.theme;
           applyTheme(currentTheme);
           inputEditor.setSize('100%', +userPayload['height-inputcode']);
           jinjaEditor.setSize('100%', +userPayload['height-jinjaexpr']);
           resultEditor.setSize('100%', +userPayload['height-resultview']);
-          
+
           $.post('/settings', inputFilesPayload).done(() => {
             setupInputFilesRefresh(+inputFilesPayload.refresh_interval);
             loadInputFilesList();
@@ -464,7 +464,7 @@
           const inputFormat=xhr.getResponseHeader('X-Input-Format')||'';
           const typeText = inputFormat ? `(${rt}, input: ${inputFormat})` : `(${rt})`;
           $('#result-type').text(typeText);
-          
+
           // Update result format and content
           updateResultFormat(d);
           try{const p=JSON.parse(d);resultEditor.setValue(JSON.stringify(p,null,2));}catch{resultEditor.setValue(d);}
@@ -478,5 +478,8 @@
       }
     });
   </script>
+
+  <!-- Spacer for easier CodeMirror resizing -->
+  <div style="height: 300px;"></div>
 </body>
 </html>
