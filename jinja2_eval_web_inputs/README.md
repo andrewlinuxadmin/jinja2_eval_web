@@ -1,44 +1,27 @@
-# Input Files Directory
+# Input Files
 
-This directory contains JSON and YAML files that can be loaded into the Jinja2 Web Evaluator.
+Sample data files for the Jinja2 Web Evaluator.
 
-## Usage
+## Setup
 
-1. Place your JSON or YAML files in this directory
-2. Configure the input files directory in the web interface (Settings tab)
-3. Select files from the Input Files dropdown in the web interface
-4. Files will be automatically loaded into the input field
+1. Add JSON/YAML files to this directory
+2. Configure path in `jinja2_eval_web.conf`:
+   ```ini
+   [input_files]
+   directory = jinja2_eval_web_inputs
+   ```
+3. Select files via web interface dropdown
 
-## File Formats
+## Supported Formats
 
-The evaluator supports both JSON and YAML formats with automatic detection:
+- **JSON**: Auto-detected format
+- **YAML**: Auto-detected format
 
-### JSON Example:
-```json
-{
-  "users": [
-    {"name": "Alice", "role": "admin"},
-    {"name": "Bob", "role": "user"}
-  ]
-}
-```
+## Sample Files
 
-### YAML Example:
-```yaml
-users:
-  - name: Alice
-    role: admin
-  - name: Bob
-    role: user
-```
+- `sample.json` - Server configuration example
+- `sample.yaml` - Application data example
 
 ## Security
 
-- Only files within this configured directory can be accessed
-- Path traversal attacks are prevented
-- Only valid filenames are accepted
-
-## Example Files
-
-- `sample.json` - Example JSON configuration and server data
-- `sample.yaml` - Example YAML configuration with applications data
+Files outside configured directory cannot be accessed.

@@ -65,9 +65,13 @@
 
     <!-- JSON/YAML Input -->
     <div class="card mb-4 mx-auto" style="width:90%;">
-      <div class="card-body position-relative">
-        <button class="btn btn-sm btn-outline-secondary position-absolute" style="top:10px; right:10px; z-index:10;" onclick="downloadContent(inputEditor, 'input.json')">Download</button>
-        <h2 class="card-title bg-light p-2">JSON/YAML Input</h2>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="card-title bg-light p-2 mb-0">JSON/YAML Input</h2>
+          <button class="btn btn-sm btn-outline-secondary" onclick="downloadInputContent()">
+            <i class="fas fa-download"></i> Download
+          </button>
+        </div>
         <form id="upload-form" class="mb-3">
           <div class="input-group">
             <input type="file" class="form-control" id="jsonfile" name="jsonfile">
@@ -84,21 +88,28 @@
       </div>
     </div>
 
-    <!-- Jinja Expression -->
+    <!-- Jinja2 Expression -->
     <div class="card mb-4 mx-auto" style="width:90%;">
-      <div class="card-body position-relative">
-        <button class="btn btn-sm btn-outline-secondary position-absolute" style="top:10px; right:10px; z-index:10;" onclick="downloadContent(jinjaEditor, 'jinja2_expression.j2')">Download</button>
-        <h2 class="card-title bg-light p-2">Jinja Expression</h2>
-        <div class="note mb-2">Use <code>data</code> variable for JSON input.</div>
-        <textarea id="jinjaexpr"></textarea>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="card-title bg-light p-2 mb-0">Jinja2 Expression</h2>
+          <button class="btn btn-sm btn-outline-secondary" onclick="downloadExpressionContent()">
+            <i class="fas fa-download"></i> Download
+          </button>
+        </div>
+        <textarea id="jinjacodetemplate"></textarea>
       </div>
     </div>
 
     <!-- Result -->
     <div class="card mb-4 mx-auto" style="width:90%;">
-      <div class="card-body position-relative">
-        <button class="btn btn-sm btn-outline-secondary position-absolute" style="top:10px; right:10px; z-index:10;" onclick="downloadContent(resultEditor, 'result.json')">Download</button>
-        <h2 class="card-title bg-light p-2">Result <small id="result-type" class="text-muted"></small></h2>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="card-title bg-light p-2 mb-0">Result <small id="result-type" class="text-muted"></small></h2>
+          <button class="btn btn-sm btn-outline-secondary" onclick="downloadResultContent()">
+            <i class="fas fa-download"></i> Download
+          </button>
+        </div>
         <div class="mb-2">
           <select id="result-mode" class="form-select w-auto">
             <option value="application/json">JSON</option>
@@ -282,7 +293,7 @@
       resultEditor.setOption('mode', 'application/json');
     }
 
-    // Utility to download editor content
+    // Utility to download editor content with dynamic extension
     function downloadContent(editor, filename) {
       const content = editor.getValue();
       const blob = new Blob([content], { type: 'text/plain' });
@@ -294,10 +305,41 @@
       URL.revokeObjectURL(url);
     }
 
+    // Get file extension based on CodeMirror mode
+    function getExtensionFromMode(mode) {
+      const extensions = {
+        'application/json': 'json',
+        'text/x-yaml': 'yaml',
+        'application/xml': 'xml',
+        'text/plain': 'txt',
+        'jinja2': 'j2'
+      };
+      return extensions[mode] || 'txt';
+    }
+
+    // Download input content with dynamic extension
+    function downloadInputContent() {
+      const mode = inputEditor.getOption('mode');
+      const extension = getExtensionFromMode(mode);
+      downloadContent(inputEditor, `input.${extension}`);
+    }
+
+    // Download expression content
+    function downloadExpressionContent() {
+      downloadContent(jinjaEditor, 'jinja2_expression.j2');
+    }
+
+    // Download result content with dynamic extension
+    function downloadResultContent() {
+      const mode = resultEditor.getOption('mode');
+      const extension = getExtensionFromMode(mode);
+      downloadContent(resultEditor, `result.${extension}`);
+    }
+
     $(document).ready(() => {
       inputEditor = CodeMirror.fromTextArea($('#inputcode')[0], { mode:'application/json',
         lineNumbers:true, lineWrapping:true, tabSize:2 });
-      jinjaEditor = CodeMirror.fromTextArea($('#jinjaexpr')[0], { mode:'jinja2',
+      jinjaEditor = CodeMirror.fromTextArea($('#jinjacodetemplate')[0], { mode:'jinja2',
         lineNumbers:true, lineWrapping:true, tabSize:2 });
       resultEditor = CodeMirror.fromTextArea($('#resultview')[0], { mode:'application/json',
         lineNumbers:true, readOnly:true, lineWrapping:true, tabSize:2 });
