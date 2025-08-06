@@ -1,0 +1,6 @@
+{
+  "name": "João Silva",
+  "age": 30,
+  "city": "São Paulo",
+  "skills": ["Python", "JavaScript", "Docker", "Kubernetes"]
+}

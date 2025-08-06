@@ -44,11 +44,18 @@
 </head>
 <body>
   <div id="top-controls">
+    <button id="clear-all" class="btn btn-warning me-2">Clear All</button>
     <button id="settings-toggle" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</button>
   </div>
 
   <div class="container-fluid my-4">
     <h1 class="text-center mb-4">Jinja2 Web Evaluate <small class="text-muted" id="version">v1.1</small></h1>
+    <div class="mb-3 mx-auto" style="width:90%;" id="input-files-container" style="display:none;">
+      <label for="input-files-select" class="form-label">Load from Input Files</label>
+      <select id="input-files-select" class="form-select">
+        <option value="">-- Select input file --</option>
+      </select>
+    </div>
     <div class="mb-3 mx-auto" style="width:90%;">
       <label for="history-select" class="form-label">Load from History</label>
       <select id="history-select" class="form-select">
@@ -122,6 +129,15 @@
             </select>
           </div>
           <div class="mb-3">
+            <label for="input-files-directory" class="form-label">Input Files Directory</label>
+            <input type="text" class="form-control" id="input-files-directory" placeholder="Path to directory with input files">
+            <div class="form-text">Leave empty to disable. Can be relative or absolute path.</div>
+          </div>
+          <div class="mb-3">
+            <label for="input-files-refresh" class="form-label">Input Files Refresh Interval (seconds)</label>
+            <input type="number" class="form-control" id="input-files-refresh" min="1" value="1">
+          </div>
+          <div class="mb-3">
             <label for="height-inputcode" class="form-label">JSON Editor Height (px)</label>
             <input type="number" class="form-control" id="height-inputcode">
           </div>
@@ -145,6 +161,7 @@
 
   <script>
     let historyMap = [], inputEditor, jinjaEditor, resultEditor;
+    let inputFilesRefreshInterval = null;
     const themes = {
       light: 'eclipse', dark: 'dracula'
     };
@@ -164,6 +181,47 @@
         historyMap = data;
         data.forEach((e,i) => sel.append(`<option value="${i}">${e.datetime} | ${e.expr.slice(0,50).replace(/\n/g,' ')} | ${e.input.slice(0,50).replace(/\n/g,' ')}</option>`));
       });
+    }
+
+    function loadInputFilesList() {
+      $.getJSON('/input-files', data => {
+        const sel = $('#input-files-select').empty().append('<option value="">-- Select input file --</option>');
+        if (data.length > 0) {
+          $('#input-files-container').show();
+          data.forEach(filename => sel.append(`<option value="${filename}">${filename}</option>`));
+        } else {
+          $('#input-files-container').hide();
+        }
+      });
+    }
+
+    function loadInputFileContent(filename) {
+      if (!filename) return;
+      $.get(`/input-file-content?filename=${encodeURIComponent(filename)}`)
+        .done(content => {
+          inputEditor.setValue(content);
+          sendRender();
+        })
+        .fail(() => {
+          alert('Error loading file content');
+        });
+    }
+
+    function setupInputFilesRefresh(intervalSeconds) {
+      if (inputFilesRefreshInterval) {
+        clearInterval(inputFilesRefreshInterval);
+      }
+      if (intervalSeconds > 0) {
+        inputFilesRefreshInterval = setInterval(loadInputFilesList, intervalSeconds * 1000);
+      }
+    }
+
+    function clearAllEditors() {
+      inputEditor.setValue('');
+      jinjaEditor.setValue('{{ data }}');
+      resultEditor.setValue('');
+      $('#history-select').val('');
+      $('#input-files-select').val('');
     }
 
     // Utility to download editor content
@@ -193,24 +251,39 @@
           $('#height-jinjaexpr').val(s['height-jinjaexpr']||100);
           $('#height-resultview').val(s['height-resultview']||1000);
         });
+        $.getJSON('/settings?section=input_files', s => {
+          $('#input-files-directory').val(s.directory||'');
+          $('#input-files-refresh').val(s.refresh_interval||'1');
+        });
       });
 
       $('#save-settings').click(() => {
-        const payload = {
+        const userPayload = {
           section:'user',
           theme:$('#theme-select').val(),
           'height-inputcode':$('#height-inputcode').val(),
           'height-jinjaexpr':$('#height-jinjaexpr').val(),
           'height-resultview':$('#height-resultview').val()
         };
-        $.post('/settings', payload).done(() => {
-          currentTheme = payload.theme;
+        const inputFilesPayload = {
+          section:'input_files',
+          directory:$('#input-files-directory').val(),
+          refresh_interval:$('#input-files-refresh').val()
+        };
+        
+        $.post('/settings', userPayload).done(() => {
+          currentTheme = userPayload.theme;
           applyTheme(currentTheme);
-          inputEditor.setSize('100%', +payload['height-inputcode']);
-          jinjaEditor.setSize('100%', +payload['height-jinjaexpr']);
-          resultEditor.setSize('100%', +payload['height-resultview']);
-          $('#settingsModal').modal('hide');
-          loadHistoryList();
+          inputEditor.setSize('100%', +userPayload['height-inputcode']);
+          jinjaEditor.setSize('100%', +userPayload['height-jinjaexpr']);
+          resultEditor.setSize('100%', +userPayload['height-resultview']);
+          
+          $.post('/settings', inputFilesPayload).done(() => {
+            setupInputFilesRefresh(+inputFilesPayload.refresh_interval);
+            loadInputFilesList();
+            $('#settingsModal').modal('hide');
+            loadHistoryList();
+          });
         });
       });
 
@@ -246,12 +319,29 @@
         const e=historyMap[idx]; inputEditor.setValue(e.input); jinjaEditor.setValue(e.expr); sendRender();
       });
 
+      $('#input-files-select').change(() => {
+        const filename = $('#input-files-select').val();
+        if (filename) {
+          loadInputFileContent(filename);
+        }
+      });
+
+      $('#clear-all').click(() => {
+        clearAllEditors();
+      });
+
       $.getJSON('/settings?section=user', s=>{
         currentTheme=s.theme||'dark'; applyTheme(currentTheme);
         inputEditor.setSize('100%',+s['height-inputcode']||100);
         jinjaEditor.setSize('100%',+s['height-jinjaexpr']||100);
         resultEditor.setSize('100%',+s['height-resultview']||1000);
         loadHistoryList(); sendRender();
+      });
+
+      $.getJSON('/settings?section=input_files', s => {
+        const refreshInterval = +(s.refresh_interval || '1');
+        setupInputFilesRefresh(refreshInterval);
+        loadInputFilesList();
       });
 
       function sendRender(){

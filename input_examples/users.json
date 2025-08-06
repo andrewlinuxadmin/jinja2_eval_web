@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "roles": ["administrator", "user"]
+    },
+    {
+      "id": 2,
+      "username": "developer",
+      "email": "dev@example.com", 
+      "roles": ["developer", "user"]
+    },
+    {
+      "id": 3,
+      "username": "analyst",
+      "email": "analyst@example.com",
+      "roles": ["analyst", "user"]
+    }
+  ],
+  "permissions": {
+    "administrator": ["read", "write", "delete", "admin"],
+    "developer": ["read", "write"],
+    "analyst": ["read"],
+    "user": ["read"]
+  }
+}

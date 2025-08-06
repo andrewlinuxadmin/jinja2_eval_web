@@ -1,0 +1,19 @@
+{
+  "servers": [
+    {
+      "hostname": "web01",
+      "ip": "192.168.1.10",
+      "services": ["nginx", "php-fpm"]
+    },
+    {
+      "hostname": "web02", 
+      "ip": "192.168.1.11",
+      "services": ["nginx", "php-fpm"]
+    },
+    {
+      "hostname": "db01",
+      "ip": "192.168.1.20",
+      "services": ["mysql"]
+    }
+  ]
+}
