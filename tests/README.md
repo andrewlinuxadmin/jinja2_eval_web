@@ -1,6 +1,6 @@
 # Test Suite Summary
 
-This directory contains comprehensive tests for the Jinja2 Web Evaluator, specifically focused on the new input files functionality.
+This directory contains comprehensive tests for the Jinja2 Web Evaluator, specifically focused on the new input files functionality and YAML support.
 
 ## Test Files Created
 
@@ -45,6 +45,32 @@ This directory contains comprehensive tests for the Jinja2 Web Evaluator, specif
 - Rendering professional reports and configurations
 - History tracking validation
 
+### 4. `yaml_support_test.py`
+**Purpose**: YAML input format validation
+- Tests the new YAML input support functionality
+- Validates automatic format detection (JSON vs YAML)
+- Tests error handling for invalid inputs
+
+**Key Tests**:
+- Valid YAML input parsing and rendering
+- Valid JSON input (backward compatibility)
+- Invalid input handling (neither JSON nor YAML)
+- YAML file loading from input files directory
+- Format detection headers verification
+
+### 5. `format_detection_test.py`
+**Purpose**: Automatic UI format detection validation
+- Tests automatic format detection in combo selectors
+- Validates UI updates when content changes
+- Tests format detection across different scenarios
+
+**Key Tests**:
+- JSON content format detection and UI updates
+- YAML content format detection and UI updates
+- Plain text content handling
+- File loading with automatic format detection
+- Result format detection and combo updates
+
 ## Test Results Summary
 
 All tests pass successfully, validating:
@@ -57,6 +83,8 @@ All tests pass successfully, validating:
 ✅ **Error Handling**: Proper error responses for various failure scenarios
 ✅ **User Experience**: Complete workflows function as intended
 ✅ **History Tracking**: All operations are properly logged
+✅ **YAML Support**: Both JSON and YAML inputs are supported with automatic detection
+✅ **Format Detection**: UI combos automatically update based on content type
 
 ## Security Features Validated
 
@@ -85,6 +113,23 @@ python3 tests/workflow_test.py
 
 # User simulation tests (realistic scenarios)
 python3 tests/user_simulation.py
+
+# YAML support tests (new functionality)
+python3 tests/yaml_support_test.py
+
+# Format detection tests (UI functionality)
+python3 tests/format_detection_test.py
 ```
 
 All tests should pass with 100% success rate when the server is running on localhost:8000.
+
+## New Features (v1.2)
+
+- **YAML Input Support**: The evaluator now accepts both JSON and YAML input formats
+- **Automatic Format Detection**: The server automatically detects whether input is JSON or YAML
+- **Format Headers**: Response headers include detected input format information
+- **Backward Compatibility**: All existing JSON functionality continues to work unchanged
+- **YAML Files**: Input files directory now supports .yaml files alongside .json files
+- **Smart UI Updates**: Format combo selectors automatically update based on content type
+- **Intelligent Detection**: UI detects format when loading files, history, or manual input
+- **Result Format Detection**: Output format is automatically detected and displayed

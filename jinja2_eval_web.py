@@ -7,6 +7,7 @@ import signal
 import configparser
 import datetime
 import base64
+import yaml
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
@@ -267,12 +268,25 @@ class JinjaHandler(BaseHTTPRequestHandler):
     json_text = params.get('json', [''])[0]
     expr = params.get('expr', [''])[0]
 
+    # Try to parse as JSON first, then YAML if JSON fails
     try:
       data = json.loads(json_text)
-    except Exception as e:
-      self._send_headers(400, 'text/plain')
-      self.wfile.write(f'JSON parsing error: {e}'.encode())
-      return
+      input_format = 'JSON'
+    except json.JSONDecodeError:
+      try:
+        data = yaml.safe_load(json_text)
+        input_format = 'YAML'
+        # If yaml.safe_load returns None for empty string, treat as empty dict
+        if data is None:
+          data = {}
+      except yaml.YAMLError as e:
+        self._send_headers(400, 'text/plain')
+        self.wfile.write(f'Input parsing error (tried JSON and YAML): {e}'.encode())
+        return
+      except Exception as e:
+        self._send_headers(400, 'text/plain')
+        self.wfile.write(f'Input parsing error: {e}'.encode())
+        return
 
     try:
       template = env.from_string(expr)
@@ -280,9 +294,9 @@ class JinjaHandler(BaseHTTPRequestHandler):
       try:
         parsed_out = json.loads(output)
         output = json.dumps(parsed_out, indent=2)
-        headers = {'X-Result-Type': 'json'}
+        headers = {'X-Result-Type': 'json', 'X-Input-Format': input_format}
       except Exception:
-        headers = {'X-Result-Type': 'string'}
+        headers = {'X-Result-Type': 'string', 'X-Input-Format': input_format}
 
       # Record
       try:

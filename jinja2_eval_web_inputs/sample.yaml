@@ -1,0 +1,27 @@
+example: "This is a sample YAML file"
+purpose: "Demonstrate YAML support in input files"
+data:
+  servers:
+    - server1.example.com
+    - server2.example.com
+  environments:
+    - development
+    - staging
+    - production
+  config:
+    timeout: 30
+    retries: 3
+    debug: false
+  applications:
+    web:
+      name: "Web Application"
+      port: 8080
+      replicas: 3
+    api:
+      name: "REST API"
+      port: 3000
+      replicas: 2
+    database:
+      name: "PostgreSQL"
+      port: 5432
+      replicas: 1

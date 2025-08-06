@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Jinja2 Web Evaluator specific
+jinja2_eval_web.json
+.lh/
+**/.lh/
+debug_test.py
+quick_test.py
+test_*.py

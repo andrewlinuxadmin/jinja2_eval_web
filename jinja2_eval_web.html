@@ -49,7 +49,7 @@
   </div>
 
   <div class="container-fluid my-4">
-    <h1 class="text-center mb-4">Jinja2 Web Evaluate <small class="text-muted" id="version">v1.1</small></h1>
+    <h1 class="text-center mb-4">Jinja2 Web Evaluate <small class="text-muted" id="version">v1.2</small></h1>
     <div class="mb-3 mx-auto" style="width:90%;" id="input-files-container" style="display:none;">
       <label for="input-files-select" class="form-label">Load from Input Files</label>
       <select id="input-files-select" class="form-select">
@@ -63,15 +63,15 @@
       </select>
     </div>
 
-    <!-- JSON Input -->
+    <!-- JSON/YAML Input -->
     <div class="card mb-4 mx-auto" style="width:90%;">
       <div class="card-body position-relative">
         <button class="btn btn-sm btn-outline-secondary position-absolute" style="top:10px; right:10px; z-index:10;" onclick="downloadContent(inputEditor, 'input.json')">Download</button>
-        <h2 class="card-title bg-light p-2">JSON Input</h2>
+        <h2 class="card-title bg-light p-2">JSON/YAML Input</h2>
         <form id="upload-form" class="mb-3">
           <div class="input-group">
             <input type="file" class="form-control" id="jsonfile" name="jsonfile">
-            <button type="submit" class="btn btn-primary">Load JSON</button>
+            <button type="submit" class="btn btn-primary">Load File</button>
           </div>
         </form>
         <div class="mb-2">
@@ -167,6 +167,58 @@
     };
     let currentTheme;
 
+    // Function to detect content format
+    function detectFormat(content) {
+      if (!content || !content.trim()) return 'application/json';
+      
+      // Try to parse as JSON first
+      try {
+        JSON.parse(content);
+        return 'application/json';
+      } catch (e) {
+        // If JSON fails, check for YAML indicators
+        const trimmed = content.trim();
+        if (trimmed.includes(':') && !trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          return 'text/x-yaml';
+        }
+        return 'text/plain';
+      }
+    }
+
+    // Function to detect result format
+    function detectResultFormat(content) {
+      if (!content || !content.trim()) return 'text/plain';
+      
+      try {
+        JSON.parse(content);
+        return 'application/json';
+      } catch (e) {
+        // Check for XML
+        if (content.trim().startsWith('<') && content.trim().endsWith('>')) {
+          return 'application/xml';
+        }
+        // Check for YAML
+        if (content.includes(':') && !content.startsWith('{') && !content.startsWith('[')) {
+          return 'text/x-yaml';
+        }
+        return 'text/plain';
+      }
+    }
+
+    // Function to update input format selector
+    function updateInputFormat(content) {
+      const format = detectFormat(content);
+      $('#input-mode').val(format);
+      inputEditor.setOption('mode', format);
+    }
+
+    // Function to update result format selector
+    function updateResultFormat(content) {
+      const format = detectResultFormat(content);
+      $('#result-mode').val(format);
+      resultEditor.setOption('mode', format);
+    }
+
     function applyTheme(theme) {
       $('body').toggleClass('dark-mode', theme==='dark');
       $('.card, .modal-content').toggleClass('dark-mode', theme==='dark');
@@ -200,6 +252,7 @@
       $.get(`/input-file-content?filename=${encodeURIComponent(filename)}`)
         .done(content => {
           inputEditor.setValue(content);
+          updateInputFormat(content);
           sendRender();
         })
         .fail(() => {
@@ -222,6 +275,11 @@
       resultEditor.setValue('');
       $('#history-select').val('');
       $('#input-files-select').val('');
+      // Reset format selectors to default
+      $('#input-mode').val('application/json');
+      $('#result-mode').val('application/json');
+      inputEditor.setOption('mode', 'application/json');
+      resultEditor.setOption('mode', 'application/json');
     }
 
     // Utility to download editor content
@@ -306,17 +364,30 @@
         const f=$('#jsonfile')[0].files[0];
         if(f) {
           const r=new FileReader();
-          r.onload=evt=>{inputEditor.setValue(evt.target.result);jinjaEditor.setValue('{{ data }}');sendRender();};
+          r.onload=evt=>{
+            const content = evt.target.result;
+            inputEditor.setValue(content);
+            updateInputFormat(content);
+            jinjaEditor.setValue('{{ data }}');
+            sendRender();
+          };
           r.readAsText(f);
         }
       });
-      inputEditor.on('change',sendRender);
+      inputEditor.on('change',function() {
+        updateInputFormat(inputEditor.getValue());
+        sendRender();
+      });
       jinjaEditor.on('change',sendRender);
       if(!jinjaEditor.getValue())jinjaEditor.setValue('{{ data }}');
       $('#result-mode').change(()=>resultEditor.setOption('mode',$('#result-mode').val()));
       $('#history-select').change(()=>{
         const idx=$('#history-select').val(); if(idx==='')return;
-        const e=historyMap[idx]; inputEditor.setValue(e.input); jinjaEditor.setValue(e.expr); sendRender();
+        const e=historyMap[idx]; 
+        inputEditor.setValue(e.input); 
+        updateInputFormat(e.input);
+        jinjaEditor.setValue(e.expr); 
+        sendRender();
       });
 
       $('#input-files-select').change(() => {
@@ -346,8 +417,22 @@
 
       function sendRender(){
         $.post('/render',{json:inputEditor.getValue(),expr:jinjaEditor.getValue()})
-        .done((d,_,xhr)=>{const rt=xhr.getResponseHeader('X-Result-Type')||'string';$('#result-type').text('('+rt+')');try{const p=JSON.parse(d);resultEditor.setValue(JSON.stringify(p,null,2));}catch{resultEditor.setValue(d);}})
-        .fail(xhr=>{resultEditor.setValue('Error:'+xhr.responseText);$('#result-type').text('(error)');});
+        .done((d,_,xhr)=>{
+          const rt=xhr.getResponseHeader('X-Result-Type')||'string';
+          const inputFormat=xhr.getResponseHeader('X-Input-Format')||'';
+          const typeText = inputFormat ? `(${rt}, input: ${inputFormat})` : `(${rt})`;
+          $('#result-type').text(typeText);
+          
+          // Update result format and content
+          updateResultFormat(d);
+          try{const p=JSON.parse(d);resultEditor.setValue(JSON.stringify(p,null,2));}catch{resultEditor.setValue(d);}
+        })
+        .fail(xhr=>{
+          const errorText = 'Error:'+xhr.responseText;
+          resultEditor.setValue(errorText);
+          updateResultFormat(errorText);
+          $('#result-type').text('(error)');
+        });
       }
     });
   </script>
